@@ -48,10 +48,28 @@ internal class UsineLeveilFlorianHugoBarbaste : Algorithme
                 );
 
                 await foreach (var gâteauCuit in gâteauxCuits.WithCancellation(_token))
-                    tâchesEmballage.Add(_emballeuses.Next.EmballerAsync(gâteauCuit));
+                {
+                    if (!gâteauCuit.EstConforme)
+                    {
+                        _usine.MettreAuRebut(gâteauCuit);
+                    }
+                    else
+                    {
+                        tâchesEmballage.Add(_emballeuses.Next.EmballerAsync(gâteauCuit));
+                    }
+                }
 
                 await foreach (var gâteauEmballé in tâchesEmballage.EnumerateCompleted().WithCancellation(_token))
-                    yield return gâteauEmballé;
+                {
+                    if (!gâteauEmballé.EstConforme)
+                    {
+                        _usine.MettreAuRebut(gâteauEmballé);
+                    }
+                    else
+                    {
+                        yield return gâteauEmballé;
+                    }
+                }
             }
         }
 
@@ -66,8 +84,19 @@ internal class UsineLeveilFlorianHugoBarbaste : Algorithme
                 tachesCuisson.Add(_fours.Next.CuireAsync(bainGâteauxCrus));
 
             await foreach (var bainGâteauxCuits in tachesCuisson.EnumerateCompleted().WithCancellation(_token))
-            foreach (var gâteauCuit in bainGâteauxCuits)
-                yield return gâteauCuit;
+            {
+                foreach (var gâteauCuit in bainGâteauxCuits)
+                {
+                    if (!gâteauCuit.EstConforme)
+                    {
+                        _usine.MettreAuRebut(gâteauCuit);
+                    }
+                    else
+                    {
+                        yield return gâteauCuit;
+                    }
+                }
+            }
         }
 
         private async IAsyncEnumerable<GâteauCru[]> PréparerConformesParBainAsync(
